@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: product-admin
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # allowPublicKeyRetrieval 解决 MySQL 8 的 caching_sha2_password 公钥问题
+    # serverTimezone 解决时区报错；characterEncoding 保证中文
+    url: jdbc:mysql://127.0.0.1:3306/demo_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: Root@123456
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 30000
+
+mybatis-plus:
+  configuration:
+    # 数据库下划线字段 -> Java 驼峰属性
+    map-underscore-to-camel-case: true
+    # 开发期在控制台打印 SQL，交付前注释掉
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+    banner: false
+  mapper-locations: classpath*:/mapper/**/*.xml
+
+logging:
+  level:
+    root: info
+    com.example.product: debug
