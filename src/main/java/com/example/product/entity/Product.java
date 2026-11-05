@@ -7,9 +7,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 
-@TableName("product")
+@TableName("product")            // 指定这个类对应数据库的 product 表
 public class Product {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.AUTO)   // 主键字段，AUTO 表示交给数据库自增
     private Long id;
     private String name;
     private BigDecimal price;
@@ -106,7 +106,7 @@ public class Product {
         this.updateTime = updateTime;
     }
 
-    @Override
+    @Override   // 重写 toString，打印对象时输出各字段的值
     public String toString() {
         return "Product{" +
                 "id=" + id +
