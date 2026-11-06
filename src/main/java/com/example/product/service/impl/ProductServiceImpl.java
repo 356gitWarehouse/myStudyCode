@@ -4,58 +4,60 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.product.common.BusinessException;
 import com.example.product.entity.Product;
+import com.example.product.mapper.CategoryMapper;
 import com.example.product.mapper.ProductMapper;
 import com.example.product.service.ProductService;
+import com.example.product.vo.ProductVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service   // 注册为业务层 Bean，Controller 按 ProductService 接口注入它
 public class ProductServiceImpl implements ProductService {
 
     private final ProductMapper productMapper;
+    private final CategoryMapper categoryMapper;
 
-    public ProductServiceImpl(ProductMapper productMapper) {
+    public ProductServiceImpl(ProductMapper productMapper, CategoryMapper categoryMapper) {
         this.productMapper = productMapper;
+        this.categoryMapper = categoryMapper;
     }
 
-    @Override   // 实现接口里的 page 方法
-    public Page<Product> page(int page, int size, String name, Long categoryId) {
-        Page<Product> p = new Page<>(page, size);
-        LambdaQueryWrapper<Product> w = new LambdaQueryWrapper<>();
-        w.like(name != null && !name.isEmpty(), Product::getName, name)
-                .eq(categoryId != null, Product::getCategoryId, categoryId)
-                .orderByDesc(Product::getId);
-        return productMapper.selectPage(p, w);
+    @Override
+    public Page<ProductVO> page(int page, int size, String name, Long categoryId,
+                                BigDecimal minPrice, BigDecimal maxPrice) {
+        // 参数钳制：页码至少 1，每页 1~100 条，防止一次查出整库
+        int safePage = Math.max(page, 1);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        return productMapper.selectVoPage(new Page<>(safePage, safeSize),
+                trimToNull(name), categoryId, minPrice, maxPrice);
     }
 
-    // ① 查单个
-    @Override   // 实现接口里的 findById 方法
-    public Product findById(Long id) {
-        Product product = productMapper.selectById(id);
-        if (product == null) {
+    @Override
+    public ProductVO findVOById(Long id) {
+        ProductVO vo = productMapper.selectVoById(id);
+        if (vo == null) {
             throw new BusinessException(404, "商品不存在");
         }
-        return product;
+        return vo;
     }
 
-    // ② 查列表
-    @Override   // 实现接口里的 listAll 方法
-    public List<Product> listAll() {
-        return productMapper.selectList(
-                new LambdaQueryWrapper<Product>().orderByDesc(Product::getId));
-    }
-
-    // ③ 新增
-    @Override   // 实现接口里的 add 方法
+    @Override
     @Transactional(rollbackFor = Exception.class)   // 方法级事务：出现任何异常都整体回滚
     public Long add(Product product) {
-        if (product.getPrice() == null || product.getPrice().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+        if (isBlank(product.getName())) {
+            throw new BusinessException(400, "商品名称不能为空");
+        }
+        if (product.getPrice() == null || product.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException(400, "商品金额必须大于0");
         }
-        if (product.getName() == null || product.getName().isEmpty()) {
-            throw new BusinessException(400, "商品名称不能为空");
+        if (product.getCategoryId() == null) {
+            throw new BusinessException(400, "商品分类不能为空");
+        }
+        if (categoryMapper.selectById(product.getCategoryId()) == null) {
+            throw new BusinessException(400, "分类不存在");
         }
         Long count = productMapper.selectCount(
                 new LambdaQueryWrapper<Product>().eq(Product::getName, product.getName()));
@@ -67,30 +69,50 @@ public class ProductServiceImpl implements ProductService {
         return product.getId();   // 插入后 MyBatis-Plus 回填 id
     }
 
-    // ④ 修改
-    @Override   // 实现接口里的 update 方法
+    @Override
     @Transactional(rollbackFor = Exception.class)   // 方法级事务：出现任何异常都整体回滚
     public void update(Long id, Product product) {
-        Product exist = productMapper.selectById(id);
-
-        if (exist == null) {
+        if (productMapper.selectById(id) == null) {
             throw new BusinessException(404, "商品不存在");
         }
-        if (product.getPrice() == null || product.getPrice().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+        // 只校验“传了”的字段，支持只改库存这类局部更新
+        if (product.getName() != null && isBlank(product.getName())) {
+            throw new BusinessException(400, "商品名称不能为空");
+        }
+        if (product.getPrice() != null && product.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException(400, "商品金额必须大于0");
+        }
+        if (product.getCategoryId() != null
+                && categoryMapper.selectById(product.getCategoryId()) == null) {
+            throw new BusinessException(400, "分类不存在");
         }
         product.setId(id);   // 用路径里的 id，防止 body 里传别的 id
         productMapper.updateById(product);
     }
 
-    // ⑤ 删除
-    @Override   // 实现接口里的 remove 方法
+    @Override
     @Transactional(rollbackFor = Exception.class)   // 方法级事务：出现任何异常都整体回滚
     public void remove(Long id) {
-        Product exist = productMapper.selectById(id);
-        if (exist == null) {
+        if (productMapper.selectById(id) == null) {
             throw new BusinessException(404, "商品不存在");
         }
         productMapper.deleteById(id);
+    }
+
+    @Override
+    public List<ProductVO> listWithCategory(String name, Long categoryId) {
+        return productMapper.selectWithCategory(trimToNull(name), categoryId);
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    private String trimToNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
     }
 }

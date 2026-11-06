@@ -2,6 +2,7 @@ package com.example.product.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,7 +18,10 @@ public class Product {
     private Long categoryId;
     private Integer status;
     private String remark;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")   // 接口输出格式：去掉 LocalDateTime 默认的 T
     private LocalDateTime createTime;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime;
 
     public Product(Long id, String name, BigDecimal price, Long categoryId, Integer stock, Integer status, String remark, LocalDateTime createTime, LocalDateTime updateTime) {

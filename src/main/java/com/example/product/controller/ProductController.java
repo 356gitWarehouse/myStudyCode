@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.product.common.Result;
 import com.example.product.entity.Product;
 import com.example.product.service.ProductService;
+import com.example.product.vo.ProductVO;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController                      // 控制器：方法返回值直接转成 JSON，不找视图页面
@@ -19,16 +21,23 @@ public class ProductController {
         this.productService = productService;
     }
 
-    // ① 查单个
-    @GetMapping("/{id}")                                   // 处理 GET /api/products/{id}
-    public Result<Product> get(@PathVariable Long id) {    // 取 URL 路径里的 id
-        return Result.success(productService.findById(id));
+    // ① 查单个（带分类名）
+    @GetMapping("/{id}")                                    // 处理 GET /api/products/{id}
+    public Result<ProductVO> get(@PathVariable Long id) {   // 取 URL 路径里的 id
+        return Result.success(productService.findVOById(id));
     }
 
-    // ② 查列表
-    @GetMapping                                            // 处理 GET /api/products
-    public Result<List<Product>> list() {
-        return Result.success(productService.listAll());
+    // ② 分页 + 多条件查询
+    // /api/products 和 /api/products/search 指向同一个方法，兼容旧文档
+    @GetMapping({"", "/search"})   // GET /api/products 与 /api/products/search 共用此方法
+    public Result<Page<ProductVO>> page(
+            @RequestParam(defaultValue = "1") int page,       // 页码，不传默认第 1 页
+            @RequestParam(defaultValue = "10") int size,      // 每页条数，不传默认 10
+            @RequestParam(required = false) String name,      // 商品名模糊匹配，可不传
+            @RequestParam(required = false) Long categoryId,  // 分类筛选，可不传
+            @RequestParam(required = false) BigDecimal minPrice,  // 最低价，可不传
+            @RequestParam(required = false) BigDecimal maxPrice) { // 最高价，可不传
+        return Result.success(productService.page(page, size, name, categoryId, minPrice, maxPrice));
     }
 
     // ③ 新增
@@ -53,13 +62,11 @@ public class ProductController {
         return Result.success(null);
     }
 
-    // ⑥ 分页 + 条件查询
-    @GetMapping("/search")                                 // 处理 GET /api/products/search
-    public Result<Page<Product>> page(
-            @RequestParam(defaultValue = "1") int page,    // 页码，不传默认第 1 页
-            @RequestParam(defaultValue = "10") int size,   // 每页条数，不传默认 10
-            @RequestParam(required = false) String name,   // 商品名模糊匹配，可不传
-            @RequestParam(required = false) Long categoryId) {  // 分类筛选，可不传
-        return Result.success(productService.page(page, size, name, categoryId));
+    // ⑥ 不分页的多表查询（方便演示 JOIN 结果）
+    @GetMapping("/with-category")                          // 处理 GET /api/products/with-category
+    public Result<List<ProductVO>> listWithCategory(
+            @RequestParam(required = false) String name,          // 商品名模糊匹配
+            @RequestParam(required = false) Long categoryId) {    // 按分类筛选
+        return Result.success(productService.listWithCategory(name, categoryId));
     }
 }
