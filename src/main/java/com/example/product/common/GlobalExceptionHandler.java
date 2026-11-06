@@ -3,7 +3,9 @@ package com.example.product.common;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -63,14 +65,34 @@ public class GlobalExceptionHandler {
                         "参数 '%s' 类型错误：期望 %s，实际收到 '%s'", paramName, requiredType, value)));
     }
 
-    // ========== 5. 请求体不是合法 JSON → 400 ==========
+    // ========== 5. 实体字段校验失败（@Valid）→ 400 ==========
+    @ExceptionHandler(MethodArgumentNotValidException.class)   // @Valid 校验请求体失败
+    public ResponseEntity<Result<Void>> handleValid(MethodArgumentNotValidException e) {
+        String msg = e.getBindingResult().getFieldErrors().stream()
+                .map(f -> f.getDefaultMessage())
+                .findFirst()
+                .orElse("参数校验失败");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.fail(400, msg));
+    }
+
+    // ========== 6. 方法参数校验失败（@RequestParam 上的 @Min/@Max）→ 400 ==========
+    @ExceptionHandler(ConstraintViolationException.class)      // @Validated 参数校验失败
+    public ResponseEntity<Result<Void>> handleConstraint(ConstraintViolationException e) {
+        String msg = e.getConstraintViolations().stream()
+                .map(v -> v.getMessage())
+                .findFirst()
+                .orElse("参数校验失败");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.fail(400, msg));
+    }
+
+    // ========== 7. 请求体不是合法 JSON → 400 ==========
     @ExceptionHandler(HttpMessageNotReadableException.class)   // 请求体不是合法 JSON → 400
     public ResponseEntity<Result<Void>> handleBadBody(HttpMessageNotReadableException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Result.fail(400, "请求体格式不正确，请检查 JSON"));
     }
 
-    // ========== 6. 兜底：其他没预料的异常 → 500 ==========
+    // ========== 8. 兜底：其他没预料的异常 → 500 ==========
     @ExceptionHandler(Exception.class)   // 兜底：其他未预料异常 → 500
     public ResponseEntity<Result<Void>> handleOther(Exception e) {
         e.printStackTrace();   // 堆栈只打在服务端控制台，不暴露给前端

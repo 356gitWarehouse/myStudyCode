@@ -3,6 +3,7 @@ package com.example.product.controller;
 import com.example.product.common.Result;
 import com.example.product.entity.Category;
 import com.example.product.service.CategoryService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,7 +28,7 @@ public class CategoryController {
     // 新增分类
     @PostMapping                      // POST /api/categories
     @ResponseStatus(HttpStatus.CREATED)   // 新增成功返回 201
-    public Result<Long> add(@RequestBody Category category) {
+    public Result<Long> add(@Valid @RequestBody Category category) {   // @Valid 校验名称与排序
         return Result.success(categoryService.add(category));
     }
 

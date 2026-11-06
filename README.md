@@ -22,9 +22,9 @@ Java 后端初期考核项目。基于 **Spring Boot 3.3 + MyBatis-Plus 3.5 + My
 - 统一返回：`{code, message, data}`，错误同时返回真实 HTTP 状态码（400/404/500）
 - 全局异常：业务异常、参数类型错误、未知路径、非法 JSON、数据库约束、兜底异常
 - 日期格式：`yyyy-MM-dd HH:mm:ss`（`@JsonFormat`）
-- 校验：名称非空/不重复、价格 > 0、分类必须存在
+- 校验：Bean Validation 注解（`@NotBlank`、`@NotNull`、`@DecimalMin`、`@Min/@Max`、`@Size`）+ `@Valid`/`@Validated`，非法参数统一返回 400
 - 事务：新增/修改/删除加 `@Transactional(rollbackFor = Exception.class)`
-- 参数保护：`page >= 1`、`1 <= size <= 100`（服务层自动钳制）
+- 分页参数校验：`page >= 1`、`1 <= size <= 100`，非法直接 400（服务层另有钳制兜底）
 
 ## 目录结构
 
@@ -130,7 +130,6 @@ product-admin
 - 未编写单元测试，验收以 Postman 集合为准；
 - `application.yml` 中数据库密码为明文示例，公开仓库前请改为环境变量；
 - 删除分类只做“有商品则拦截”，不做级联删除；
-- 分页参数非法时自动钳制，不返回 400。
 
 ## 提交记录
 

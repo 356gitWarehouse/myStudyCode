@@ -5,13 +5,18 @@ import com.example.product.common.Result;
 import com.example.product.entity.Product;
 import com.example.product.service.ProductService;
 import com.example.product.vo.ProductVO;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @RestController                      // 控制器：方法返回值直接转成 JSON，不找视图页面
+@Validated                           // 开启方法参数上的 @Min/@Max 校验
 @RequestMapping("/api/products")     // 类级路径前缀，下面所有接口都以它开头
 public class ProductController {
 
@@ -31,8 +36,9 @@ public class ProductController {
     // /api/products 和 /api/products/search 指向同一个方法，兼容旧文档
     @GetMapping({"", "/search"})   // GET /api/products 与 /api/products/search 共用此方法
     public Result<Page<ProductVO>> page(
-            @RequestParam(defaultValue = "1") int page,       // 页码，不传默认第 1 页
-            @RequestParam(defaultValue = "10") int size,      // 每页条数，不传默认 10
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码必须大于0") int page,   // 页码
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "每页条数必须大于0")
+            @Max(value = 100, message = "每页最多100条") int size,                        // 每页条数
             @RequestParam(required = false) String name,      // 商品名模糊匹配，可不传
             @RequestParam(required = false) Long categoryId,  // 分类筛选，可不传
             @RequestParam(required = false) BigDecimal minPrice,  // 最低价，可不传
@@ -43,7 +49,7 @@ public class ProductController {
     // ③ 新增
     @PostMapping                                           // 处理 POST /api/products
     @ResponseStatus(HttpStatus.CREATED)                    // 新增成功返回 201，而不是 200
-    public Result<Long> add(@RequestBody Product product) { // 取请求体里的 JSON
+    public Result<Long> add(@Valid @RequestBody Product product) { // @Valid 触发实体字段校验
         return Result.success(productService.add(product));
     }
 
