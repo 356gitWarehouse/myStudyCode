@@ -2,6 +2,8 @@
 
 Java 后端初期考核项目。基于 **Spring Boot 3.3 + MyBatis-Plus 3.5 + MySQL 8**，实现商品/分类的 RESTful 接口、分页多条件查询、多表关联、统一返回与全局异常处理。
 
+> 接口测试说明：[doc/接口测试说明.md](doc/接口测试说明.md)；Word 版 [doc/接口测试说明.docx](doc/接口测试说明.docx)（含 5 张 Postman 实测截图）。
+
 ## 技术栈
 
 | 层 | 选型 |
@@ -33,6 +35,7 @@ product-admin
 ├─ pom.xml
 ├─ sql/init.sql                    建库建表 + 初始数据
 ├─ postman/                        Postman 集合与环境
+├─ doc/                            接口测试说明（md/docx）+ 实测截图
 └─ src/main
    ├─ java/com/example/product
    │  ├─ ProductApplication.java    启动类
