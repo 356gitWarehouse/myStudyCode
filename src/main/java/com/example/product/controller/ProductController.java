@@ -38,7 +38,7 @@ public class ProductController {
     public Result<Page<ProductVO>> page(
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码必须大于0") int page,   // 页码
             @RequestParam(defaultValue = "10") @Min(value = 1, message = "每页条数必须大于0")
-            @Max(value = 100, message = "每页最多100条") int size,                        // 每页条数
+            @Max(value = 100, message = "每页最多100条") int size,                                   // 每页条数
             @RequestParam(required = false) String name,      // 商品名模糊匹配，可不传
             @RequestParam(required = false) Long categoryId,  // 分类筛选，可不传
             @RequestParam(required = false) BigDecimal minPrice,  // 最低价，可不传
